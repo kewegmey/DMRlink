@@ -38,6 +38,8 @@ from dmr_utils.utils import hex_str_3, hex_str_4, int_id
 from dmrlink import IPSC, mk_ipsc_systems, systems, reportFactory, REPORT_OPCODES, build_aliases
 from ipsc.ipsc_const import BURST_DATA_TYPE
 
+# import zmq
+
 
 __author__      = 'Kory Wegmeyer'
 __copyright__   = 'Copyright (C) 2023 Kory Wegmeyer, kory@wegmeyer.io'
@@ -105,6 +107,18 @@ class confbridgeIPSC(IPSC):
         self.last_seq_id = '\x00'
         self.call_start = 0
 
+    def private_data(self, _src_sub, _dst_sub, _ts, _end, _peerid, _data):
+        self._logger.debug('(%s) Test Private Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
+        # zmqpub.send("privateData",_data)
+
+    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerid, _data):
+        self._logger.debug('(%s) Group Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
+        # zmqpub.send("groupVoice",_data)
+
+    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerid, _data):
+        self._logger.debug('(%s) Private Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
+        # zmqpub.send("privateVoice",_data)
+
 class confbridgeReportFactory(reportFactory):
         
     def send_bridge(self):
@@ -160,6 +174,12 @@ if __name__ == '__main__':
     
     # INITIALIZE THE REPORTING LOOP
     report_server = config_reports(CONFIG, logger, confbridgeReportFactory)
+
+    # ZMQ Publisher
+    # port = 5556
+    # context = zmq.Context()
+    # zmqpub = context.socket(zmq.PUB)
+    # zmqpub.bind("tcp://*:%s" % port)
         
     # INITIALIZE AN IPSC OBJECT (SELF SUSTAINING) FOR EACH CONFIGURED IPSC
     systems = mk_ipsc_systems(CONFIG, logger, systems, confbridgeIPSC, report_server)
