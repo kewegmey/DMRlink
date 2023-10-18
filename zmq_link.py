@@ -39,6 +39,7 @@ from dmrlink import IPSC, mk_ipsc_systems, systems, reportFactory, REPORT_OPCODE
 from ipsc.ipsc_const import BURST_DATA_TYPE
 
 import zmq
+import json
 
 
 __author__      = 'Kory Wegmeyer'
@@ -108,16 +109,24 @@ class confbridgeIPSC(IPSC):
         self.call_start = 0
 
     def private_data(self, _src_sub, _dst_sub, _ts, _end, _peerid, _data):
-        self._logger.debug('(%s) Test Private Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
-        zmqpub.send("privateData",_data)
+        #print(type(_src_sub))
+        self._logger.debug('(%s) Private Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
+        data = {
+            "packet_type": "privateData",
+            "source": int_id(_src_sub),
+            "destination": int_id(_dst_sub),
+            "timeSlot": _ts,
+            "end": _end,
+            "peerId": int_id(_peerid),
+            "data": ahex(_data)
+        }
+        zmqpub.send_string(json.dumps(data))
 
     def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerid, _data):
         self._logger.debug('(%s) Group Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
-        zmqpub.send("groupVoice",_data)
 
     def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerid, _data):
         self._logger.debug('(%s) Private Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerid), int_id(_dst_sub))
-        zmqpub.send("privateVoice",_data)
 
 class confbridgeReportFactory(reportFactory):
         
@@ -179,7 +188,7 @@ if __name__ == '__main__':
     port = 5556
     context = zmq.Context()
     zmqpub = context.socket(zmq.PUB)
-    zmqpub.bind("tcp://*:%s" % port)
+    zmqpub.bind("tcp://0.0.0.0:%s" % port)
         
     # INITIALIZE AN IPSC OBJECT (SELF SUSTAINING) FOR EACH CONFIGURED IPSC
     systems = mk_ipsc_systems(CONFIG, logger, systems, confbridgeIPSC, report_server)
